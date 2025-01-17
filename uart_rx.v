@@ -33,6 +33,12 @@ module uart_rx(clk, rst, rx, data_out, data_rdy);
   reg data_rdy = 0;
   reg flag = 0;
   
+  ila_0 ila_0 (
+	.clk(clk), // input wire clk
+	.probe0(rx_buffer), // input wire [7:0]  probe0  
+	.probe1(data_rdy) // input wire [0:0]  probe1
+   );
+  
   always @(posedge clk or posedge rst) begin
     if(rst) begin
       clk_count = 0;
@@ -78,5 +84,4 @@ module uart_rx(clk, rst, rx, data_out, data_rdy);
 	  end
 	end 
   end
-
 endmodule
