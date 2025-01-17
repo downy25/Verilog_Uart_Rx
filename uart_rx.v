@@ -1,0 +1,82 @@
+module top_uart_tx(clk, rst, rx, data_rdy);
+  input wire clk;
+  input wire rst;
+  input wire rx;
+  output wire data_rdy;
+  
+  wire [7:0] data_out;
+  
+  vio_0 uut02 (
+    .clk(clk),              // input wire clk
+    .probe_in0(data_out)  // input wire [7 : 0] data_out
+  );
+  uart_rx uut1(clk, rst, rx, data_out, data_rdy);
+endmodule
+
+
+module uart_rx(clk, rst, rx, data_out, data_rdy);
+  input clk;
+  input rst;
+  input rx;
+  output [7:0] data_out;
+  output data_rdy;
+  
+  parameter CLK_FREQ = 125000000;
+  parameter BAUD_RATE = 115200;
+  parameter BIT_TIME = CLK_FREQ / BAUD_RATE;
+  
+  reg [15:0] clk_count = 0;
+  reg [3:0]  bit_index = 0;
+  reg [7:0] rx_buffer = 0;
+  reg rx_ing = 0;
+  reg [7:0] data_out = 0;
+  reg data_rdy = 0;
+  reg flag = 0;
+  
+  always @(posedge clk or posedge rst) begin
+    if(rst) begin
+      clk_count = 0;
+      bit_index = 0;
+      rx_buffer = 0;
+      rx_ing = 0;
+      data_out = 0;
+      data_rdy = 0;	
+	end 
+	else begin
+	  if(!rx_ing && rx == 0) begin
+	    rx_ing <= 1;
+		clk_count <=  BIT_TIME / 2;
+		bit_index <= 0;
+		data_rdy <= 0;
+	  end
+	  else if(rx_ing) begin
+	    if (clk_count < (BIT_TIME-1)) begin
+	      clk_count <= clk_count +1;
+	    end
+		else begin
+		  clk_count <= 0;
+		  if(bit_index <8 ) begin
+		    rx_buffer[bit_index] <= rx;
+			if(flag)
+			  bit_index <= bit_index + 1;
+			else 
+			  flag = 1;
+		  end
+		  else if(bit_index == 8 ) begin
+		    if(rx == 1) begin
+			  data_rdy <= 1;
+			  data_out <= rx_buffer;
+			  flag <= 0;
+			end
+			rx_ing <= 0;
+			flag <= 0;
+		  end
+		end 
+	  end 
+	  else begin
+	    data_rdy <= 0;
+	  end
+	end 
+  end
+
+endmodule
